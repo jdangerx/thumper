@@ -11,6 +11,7 @@ loopah in yah browsah
 ## todo
 
 [x] add visual representation of the audio to the clip display
+[] add playback indicator
 [] sync up all looping to the playing of the root clip
   [] replace individual clip play/stop to clip enable/disable
 [] click to set looping start/stop points
