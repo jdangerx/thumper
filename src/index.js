@@ -97,24 +97,50 @@ class ClipList extends React.Component {
 }
 
 class Clip extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      node: null,
+    };
+  }
+
   play() {
     const {audioCtx, audioBuf} = this.props;
+    if (this.state.node !== null) {
+      this.state.node.stop();
+      this.setState({node: null});
+    }
     const node = audioCtx.createBufferSource();
     node.buffer = audioBuf;
     node.connect(audioCtx.destination);
     node.loop = true;
+    const lastPlayed = new Date();
+
+    const updateElapsedTime = () => {
+      const now = new Date();
+      const elapsed = now - lastPlayed;
+      console.log(elapsed);
+      this.setState({elapsed});
+    }
+    const callbackId = window.requestAnimationFrame(updateElapsedTime);
+
     node.start();
-    this.setState({node});
+    this.setState({node, lastPlayed, elapsed: 0, callbackId});
   }
 
   stop() {
     this.state.node.stop();
+    window.cancelAnimationFrame(this.state.callbackId);
   }
 
   render() {
     return <div>
       <div>
-        <PCMVis buffer={ this.props.audioBuf } width={ 800 } height={ 200 } />
+        <PCMVis
+          buffer={ this.props.audioBuf }
+          width={ 800 }
+          height={ 200 }
+        />
       </div>
       <button onClick={ () => this.play() }>play</button>
       <button onClick={ () => this.stop() }>stop</button>
