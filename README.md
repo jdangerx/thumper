@@ -11,12 +11,12 @@ loopah in yah browsah
 ## todo
 
 [x] add visual representation of the audio to the clip display
-[] add playback indicator
-[] sync up all looping to the playing of the root clip
-  [] replace individual clip play/stop to clip enable/disable
+[] fix recording time
+[] add notion of pausing (oh! then we don't have to get rid of the requestAnimationFrame)
+[] playback timeline
+[] looping
+[] overdubbing
 [] click to set looping start/stop points
-[] when recording a clip, add silence to the beginning to match up timing with root clip
-  [] overdub if it goes too long
 [] CSS
 
 [] fix annoying clicking sound at the beginning of recording
@@ -25,7 +25,6 @@ loopah in yah browsah
 
 [] audio normalization
 [] click track?
-
 
 [] websockets for collaboration
   [] connect to a websocket server

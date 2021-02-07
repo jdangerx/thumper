@@ -8,7 +8,12 @@ class Thumper extends React.Component {
     this.audioCtx = new AudioContext();
     this.state = {
       isRecording: false,
+      isPlaying: false,
+      playbackPosition: 0,
+      scale: 20,
+      armedTrack: 0,
       clips: [],
+      tracks: [[], [], [], []],
       chunks: [],
     };
   }
@@ -18,25 +23,9 @@ class Thumper extends React.Component {
       const stream = await navigator.mediaDevices.getUserMedia({audio: true});
       const recorder = new MediaRecorder(stream);
       recorder.ondataavailable = e => this.state.chunks.push(e.data);
-      recorder.onstop = async () => {
-        const audioBuf= await this.makeAudioBuffer(this.state.chunks);
-        const clip = <Clip
-          audioCtx={ this.audioCtx }
-          audioBuf={ audioBuf }
-        />;
-        const clips = [...this.state.clips];
-        clips.push(clip);
-        this.setState({clips, chunks: []})
-      }
+      recorder.onstop = () => this.stageClip();
       this.setState({stream, recorder});
     }
-  }
-
-  async makeAudioBuffer(chunks) {
-    const blob = new Blob(chunks, { 'type' : 'audio/ogg; codecs=opus' });
-    const arrayBuf = await blob.arrayBuffer();
-    const audioBuf = await this.audioCtx.decodeAudioData(arrayBuf);
-    return audioBuf;
   }
 
   componentWillUnmount() {
@@ -45,54 +34,96 @@ class Thumper extends React.Component {
     }
   }
 
-  handleStop() {
+  async stageClip() {
+    const audioBuf = await this.makeAudioBuffer(this.state.chunks);
+    const {clips, tracks} = this.state;
+    clips.push(audioBuf);
+    const armedTrack = tracks[this.state.armedTrack];
+    armedTrack.push({start: this.state.startedRecording, audioBuf});
+    console.log(tracks);
+    this.setState({clips, tracks, chunks: [], startedRecording: null});
+  }
+
+  startPlaybackTimer() {
+    const lastPlayed = new Date();
+
+    const updateTime = () => {
+      const now = new Date();
+      const playbackPosition = (now - this.state.lastPlayed) / 1000;
+      this.setState({playbackPosition});
+      if (this.state.isPlaying) {
+        window.requestAnimationFrame(updateTime);
+      }
+    }
+    const callbackId = window.requestAnimationFrame(updateTime);
+    this.setState({lastPlayed, isPlaying: true});
+  }
+
+  play() {
+    // start playing audio, also
+    this.startPlaybackTimer();
+  }
+
+  stopPlaybackTimer() {
+    this.setState({isPlaying: false, playbackPosition: 0});
+  }
+
+  stop() {
+    // stop playing audio, also
+    this.stopPlaybackTimer();
+    if (this.state.isRecording) {
+      this.stopRecording();
+    }
+  }
+
+  async makeAudioBuffer(chunks) {
+    const blob = new Blob(chunks, {'type' : 'audio/ogg; codecs=opus'});
+    const arrayBuf = await blob.arrayBuffer();
+    const audioBuf = await this.audioCtx.decodeAudioData(arrayBuf);
+    return audioBuf;
+  }
+
+  stopRecording() {
     this.state.recorder.stop();
     this.setState({isRecording: false});
   }
 
-  handleStart() {
+  startRecording() {
+    if (!this.state.isPlaying) {
+      this.startPlaybackTimer();
+    }
     this.state.recorder.start();
-    this.setState({isRecording: true});
+    this.setState({isRecording: true, startedRecording: this.state.playbackPosition});
   }
 
-  toggleRecord() {
+  record() {
     if (!this.state.stream) {
       console.log("no stream");
       return;
     }
     if (this.state.isRecording) {
-      this.handleStop();
+      this.stopRecording();
     } else {
-      this.handleStart();
+      this.startRecording();
     }
   }
 
   render() {
     return (
       <div>
-        <Button
-          isRecording={this.state.isRecording}
-          onClick={() => this.toggleRecord()}
+        <Transport
+          play = {() => this.play()}
+          stop = {() => this.stop()}
+          record = {() => this.record()}
         />
-        <ClipList clips={this.state.clips} />
+        <Timeline
+          width = {800}
+          time = {this.state.playbackPosition}
+          scale={this.state.scale}
+        />
+        <TrackList tracks={this.state.tracks} scale={this.state.scale}/>
       </div>
     );
-  }
-}
-
-class Button extends React.Component {
-  render() {
-    return <button onClick={this.props.onClick}>
-      {this.props.isRecording? "stop" : "record" }
-    </button>;
-  }
-}
-
-class ClipList extends React.Component {
-  render() {
-    return <ul>
-      {this.props.clips.map((clip, i) => <li key={i}>{clip}</li>)}
-    </ul>
   }
 }
 
@@ -114,18 +145,8 @@ class Clip extends React.Component {
     node.buffer = audioBuf;
     node.connect(audioCtx.destination);
     node.loop = true;
-    const lastPlayed = new Date();
-
-    const updateElapsedTime = () => {
-      const now = new Date();
-      const elapsed = now - lastPlayed;
-      console.log(elapsed);
-      this.setState({elapsed});
-    }
-    const callbackId = window.requestAnimationFrame(updateElapsedTime);
-
     node.start();
-    this.setState({node, lastPlayed, elapsed: 0, callbackId});
+    this.setState({node});
   }
 
   stop() {
@@ -135,15 +156,58 @@ class Clip extends React.Component {
 
   render() {
     return <div>
-      <div>
+      clip
+    </div>
+  }
+}
+
+class Transport extends React.Component {
+  render() {
+    return <div>
+      <button onClick = {this.props.play}>play</button>
+      <button onClick = {this.props.stop}>stop</button>
+      <button onClick = {this.props.record}>record</button>
+    </div>
+  }
+}
+
+class Timeline extends React.Component {
+  render() {
+    const currentSeconds = this.props.time;
+    const indicatorStyle = {
+      position: "absolute",
+      left: currentSeconds * this.props.scale,
+      borderLeft: "1px solid red",
+      height: "600px",
+      zIndex: 1000,
+    }
+    return <div style={{background: '#CCC'}} width={this.props.width}>
+      <div style={indicatorStyle}></div>
+    </div>
+  }
+}
+
+class TrackList extends React.Component {
+  render() {
+    return <div>
+      {this.props.tracks.map((track) => (
+        <Track clips={track} scale={this.props.scale}/>
+      ))}
+    </div>;
+  }
+}
+
+class Track extends React.Component {
+  render() {
+    return <div>
+      {this.props.clips.map((clip) => (
         <PCMVis
-          buffer={ this.props.audioBuf }
-          width={ 800 }
-          height={ 200 }
+          start = {clip.start}
+          buffer = {clip.audioBuf}
+          scale = {this.props.scale}
+          height = { 150 }
         />
-      </div>
-      <button onClick={ () => this.play() }>play</button>
-      <button onClick={ () => this.stop() }>stop</button>
+      ))}
     </div>
   }
 }
@@ -159,11 +223,16 @@ class PCMVis extends React.Component {
   }
 
   updateCanvas() {
-    const ctx = this.canvasRef.current.getContext('2d');
+    const canvas = this.canvasRef.current;
+    const ctx = canvas.getContext('2d');
     const data = this.props.buffer.getChannelData(0);
-    const stepSize = Math.floor(this.props.buffer.length / this.props.width);
-    const heightScale = this.props.height/2;
-    for (let x = 0; x < this.props.width; x++) {
+    const stepSize = Math.floor(this.props.buffer.length / canvas.width);
+    const heightScale = canvas.height/2;
+    ctx.fillStyle = "#CCC";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#333";
+    console.log()
+    for (let x = 0; x < canvas.width; x++) {
       const index = Math.min(x * stepSize, data.length-1);
       const amp = data[index];
       ctx.fillRect(x, heightScale * (1 - amp), 1, heightScale * amp * 2);
@@ -171,10 +240,13 @@ class PCMVis extends React.Component {
   }
 
   render() {
+    const style = {position: "absolute", left: this.props.start * this.props.scale};
+    const width = this.props.buffer.duration * this.props.scale;
     return <canvas
-      ref={ this.canvasRef }
-      width={ this.props.width }
-      height={ this.props.height }
+      ref={this.canvasRef}
+      width={width}
+      height={this.props.height}
+      style ={style}
     />
   }
 }
