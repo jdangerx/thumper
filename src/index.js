@@ -10,10 +10,11 @@ class Thumper extends React.Component {
     super(props);
     this.audioCtx = new AudioContext();
     this.state = {
-      isRecording: false,
-      isPlaying: false,
+      recording: false,
+      playing: false,
       playbackPosition: 0,
-      scale: 20,
+      pausedPosition: 0,
+      scale: 0.02,
       armedTrack: 0,
       clips: [],
       tracks: [[], [], [], []],
@@ -21,8 +22,10 @@ class Thumper extends React.Component {
     };
 
     this.play = this.play.bind(this);
+    this.pause = this.pause.bind(this);
     this.stop = this.stop.bind(this);
     this.record = this.record.bind(this);
+    this.tick = this.tick.bind(this);
   }
 
   async componentDidMount() {
@@ -33,6 +36,7 @@ class Thumper extends React.Component {
       recorder.onstop = () => this.stageClip();
       this.setState({stream, recorder});
     }
+    window.requestAnimationFrame(this.tick);
   }
 
   componentWillUnmount() {
@@ -44,6 +48,7 @@ class Thumper extends React.Component {
   async stageClip() {
     const audioBuf = await this.makeAudioBuffer(this.state.chunks);
     const {clips, tracks} = this.state;
+    console.log(audioBuf);
     clips.push(audioBuf);
     const armedTrack = tracks[this.state.armedTrack];
     armedTrack.push({start: this.state.startedRecording, audioBuf});
@@ -51,34 +56,33 @@ class Thumper extends React.Component {
     this.setState({clips, tracks, chunks: [], startedRecording: null});
   }
 
-  startPlaybackTimer() {
-    const lastPlayed = new Date();
-
-    const updateTime = () => {
-      const now = new Date();
-      const playbackPosition = (now - this.state.lastPlayed) / 1000;
+  tick() {
+    const now = new Date();
+    if (this.state.playing) {
+      const playbackPosition = (now - this.state.playedAt) + this.state.pausedPosition;
       this.setState({playbackPosition});
-      if (this.state.isPlaying) {
-        window.requestAnimationFrame(updateTime);
-      }
     }
-    const callbackId = window.requestAnimationFrame(updateTime);
-    this.setState({lastPlayed, isPlaying: true});
+    window.requestAnimationFrame(this.tick);
   }
 
   play() {
     // start playing audio, also
-    this.startPlaybackTimer();
+    const playedAt = new Date();
+    this.setState({playedAt, playing: true});
+  }
+
+  pause() {
+    this.setState({playing: false, pausedPosition: this.state.playbackPosition});
   }
 
   stopPlaybackTimer() {
-    this.setState({isPlaying: false, playbackPosition: 0});
+    this.setState({playing: false, playbackPosition: 0, pausedPosition: 0});
   }
 
   stop() {
     // stop playing audio, also
     this.stopPlaybackTimer();
-    if (this.state.isRecording) {
+    if (this.state.recording) {
       this.stopRecording();
     }
   }
@@ -92,15 +96,17 @@ class Thumper extends React.Component {
 
   stopRecording() {
     this.state.recorder.stop();
-    this.setState({isRecording: false});
+    this.pause()
+    this.setState({recording: false});
   }
 
   startRecording() {
-    if (!this.state.isPlaying) {
-      this.startPlaybackTimer();
-    }
     this.state.recorder.start();
-    this.setState({isRecording: true, startedRecording: this.state.playbackPosition});
+    if (this.state.playing) {
+      this.pause();
+    }
+    this.play();
+    this.setState({recording: true, startedRecording: this.state.playbackPosition});
   }
 
   record() {
@@ -108,7 +114,7 @@ class Thumper extends React.Component {
       console.log("no stream");
       return;
     }
-    if (this.state.isRecording) {
+    if (this.state.recording) {
       this.stopRecording();
     } else {
       this.startRecording();
@@ -118,14 +124,20 @@ class Thumper extends React.Component {
   render() {
     return (
       <div>
+        <div>Playback pos: {this.state.playbackPosition}</div>
+        <div>Playing: {this.state.playing + ""}</div>
+        <div>Recording: {this.state.recording + ""}</div>
         <Transport
-          play = {this.play}
-          stop = {this.stop}
-          record = {this.record}
+          playing={this.state.playing}
+          recording={this.state.recording}
+          play={this.play}
+          pause={this.pause}
+          stop={this.stop}
+          record={this.record}
         />
         <Timeline
-          width = {800}
-          time = {this.state.playbackPosition}
+          width={800}
+          time={this.state.playbackPosition}
           scale={this.state.scale}
         />
         <TrackList tracks={this.state.tracks} scale={this.state.scale}/>

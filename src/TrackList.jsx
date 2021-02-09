@@ -5,8 +5,8 @@ import Track from './Track';
 class TrackList extends React.Component {
   render() {
     return <div>
-      {this.props.tracks.map((track) => (
-        <Track clips={track} scale={this.props.scale}/>
+      {this.props.tracks.map((track, index) => (
+        <Track clips={track} scale={this.props.scale} key={index}/>
       ))}
     </div>;
   }

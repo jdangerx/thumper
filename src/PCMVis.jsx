@@ -19,7 +19,7 @@ class PCMVis extends React.Component {
     ctx.fillStyle = "#CCC";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#333";
-    console.log()
+    console.log(data);
     for (let x = 0; x < canvas.width; x++) {
       const index = Math.min(x * stepSize, data.length-1);
       const amp = data[index];
@@ -29,7 +29,8 @@ class PCMVis extends React.Component {
 
   render() {
     const style = {position: "absolute", left: this.props.start * this.props.scale};
-    const width = this.props.buffer.duration * this.props.scale;
+    // buffer duration stored as seconds
+    const width = this.props.buffer.duration * 1000 * this.props.scale;
     return <canvas
       ref={this.canvasRef}
       width={width}
