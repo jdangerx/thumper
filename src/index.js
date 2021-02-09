@@ -1,6 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import Timeline from './Timeline';
+import TrackList from './TrackList';
+import Transport from './Transport';
 
 class Thumper extends React.Component {
   constructor(props) {
@@ -16,6 +19,10 @@ class Thumper extends React.Component {
       tracks: [[], [], [], []],
       chunks: [],
     };
+
+    this.play = this.play.bind(this);
+    this.stop = this.stop.bind(this);
+    this.record = this.record.bind(this);
   }
 
   async componentDidMount() {
@@ -112,9 +119,9 @@ class Thumper extends React.Component {
     return (
       <div>
         <Transport
-          play = {() => this.play()}
-          stop = {() => this.stop()}
-          record = {() => this.record()}
+          play = {this.play}
+          stop = {this.stop}
+          record = {this.record}
         />
         <Timeline
           width = {800}
@@ -158,96 +165,6 @@ class Clip extends React.Component {
     return <div>
       clip
     </div>
-  }
-}
-
-class Transport extends React.Component {
-  render() {
-    return <div>
-      <button onClick = {this.props.play}>play</button>
-      <button onClick = {this.props.stop}>stop</button>
-      <button onClick = {this.props.record}>record</button>
-    </div>
-  }
-}
-
-class Timeline extends React.Component {
-  render() {
-    const currentSeconds = this.props.time;
-    const indicatorStyle = {
-      position: "absolute",
-      left: currentSeconds * this.props.scale,
-      borderLeft: "1px solid red",
-      height: "600px",
-      zIndex: 1000,
-    }
-    return <div style={{background: '#CCC'}} width={this.props.width}>
-      <div style={indicatorStyle}></div>
-    </div>
-  }
-}
-
-class TrackList extends React.Component {
-  render() {
-    return <div>
-      {this.props.tracks.map((track) => (
-        <Track clips={track} scale={this.props.scale}/>
-      ))}
-    </div>;
-  }
-}
-
-class Track extends React.Component {
-  render() {
-    return <div>
-      {this.props.clips.map((clip) => (
-        <PCMVis
-          start = {clip.start}
-          buffer = {clip.audioBuf}
-          scale = {this.props.scale}
-          height = { 150 }
-        />
-      ))}
-    </div>
-  }
-}
-
-class PCMVis extends React.Component {
-  constructor(props) {
-    super(props);
-    this.canvasRef = React.createRef();
-  }
-
-  componentDidMount() {
-    this.updateCanvas();
-  }
-
-  updateCanvas() {
-    const canvas = this.canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const data = this.props.buffer.getChannelData(0);
-    const stepSize = Math.floor(this.props.buffer.length / canvas.width);
-    const heightScale = canvas.height/2;
-    ctx.fillStyle = "#CCC";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#333";
-    console.log()
-    for (let x = 0; x < canvas.width; x++) {
-      const index = Math.min(x * stepSize, data.length-1);
-      const amp = data[index];
-      ctx.fillRect(x, heightScale * (1 - amp), 1, heightScale * amp * 2);
-    }
-  }
-
-  render() {
-    const style = {position: "absolute", left: this.props.start * this.props.scale};
-    const width = this.props.buffer.duration * this.props.scale;
-    return <canvas
-      ref={this.canvasRef}
-      width={width}
-      height={this.props.height}
-      style ={style}
-    />
   }
 }
 
