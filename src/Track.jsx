@@ -8,7 +8,7 @@ class Track extends React.Component {
       {this.props.clips.map((clip, index) => (
         <PCMVis
           start={clip.start}
-          buffer={clip.audioBuf}
+          audioBuf={clip.audioBuf}
           scale={this.props.scale}
           height={150}
           key={index}

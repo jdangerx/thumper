@@ -11,8 +11,11 @@ loopah in yah browsah
 ## todo
 
 [x] add visual representation of the audio to the clip display
-[] fix recording time
-[] add notion of pausing (oh! then we don't have to get rid of the requestAnimationFrame)
+[x] fix recording time
+[x] add notion of pausing (oh! then we don't have to get rid of the requestAnimationFrame)
+[] recording preserves current play state
+[x] play audio again
+[/] pause audio, when paused (on play, figure out where in each buffer we need to start playing from)
 [] playback timeline
 [] looping
 [] overdubbing

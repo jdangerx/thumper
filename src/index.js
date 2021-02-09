@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import { makeName } from './utils';
+
 import Timeline from './Timeline';
 import TrackList from './TrackList';
 import Transport from './Transport';
@@ -14,10 +16,10 @@ class Thumper extends React.Component {
       playing: false,
       playbackPosition: 0,
       pausedPosition: 0,
-      scale: 0.02,
+      scale: 50,
       armedTrack: 0,
-      clips: [],
-      tracks: [[], [], [], []],
+      clips: {}, // {some-id: {node: AudioBufSourceNode, audioBuf: AudioBuf, startTime: ms, callback: callback ID}}
+      tracks: [[], [], [], []], // TODO: actually each track is just a list of clip IDs
       chunks: [],
     };
 
@@ -46,18 +48,17 @@ class Thumper extends React.Component {
   }
 
   async stageClip() {
-    const audioBuf = await this.makeAudioBuffer(this.state.chunks);
+    const audioBuf = await this.makeAudioBuf(this.state.chunks);
     const {clips, tracks} = this.state;
-    console.log(audioBuf);
-    clips.push(audioBuf);
+    const clipName = makeName(5);
+    clips[clipName] = {audioBuf, start: this.state.startedRecording};
     const armedTrack = tracks[this.state.armedTrack];
     armedTrack.push({start: this.state.startedRecording, audioBuf});
-    console.log(tracks);
     this.setState({clips, tracks, chunks: [], startedRecording: null});
   }
 
   tick() {
-    const now = new Date();
+    const now = this.audioCtx.currentTime;
     if (this.state.playing) {
       const playbackPosition = (now - this.state.playedAt) + this.state.pausedPosition;
       this.setState({playbackPosition});
@@ -66,13 +67,49 @@ class Thumper extends React.Component {
   }
 
   play() {
-    // start playing audio, also
-    const playedAt = new Date();
+    const playedAt = this.audioCtx.currentTime;
+    this.playAudio();
     this.setState({playedAt, playing: true});
   }
 
+  playAudio() {
+    const clips = this.state.clips;
+
+    // TODO: just make a bunch of nodes ready to play, then return those
+    // later do a quick loop through to set the different timeouts
+    Object.entries(clips).forEach(([id, clip]) => {
+      const node = this.audioCtx.createBufferSource();
+      node.buffer = clip.audioBuf;
+      node.connect(this.audioCtx.destination);
+      clips[id].node = node;
+      const delay = clip.start - this.state.playbackPosition;
+      console.log(clip);
+      console.log(delay);
+      if (delay >= 0) {
+        console.log(id, delay);
+        node.start(this.audioCtx.currentTime + delay);
+        clips[id].started = true;
+      }
+      // TODO: start clips we're in the middle of
+    });
+    this.setState(clips);
+  }
+
   pause() {
+    // TODO suspend the audio context?? makes this async
+    this.stopAudio();
     this.setState({playing: false, pausedPosition: this.state.playbackPosition});
+  }
+
+  stopAudio() {
+    const clips = this.state.clips;
+    Object.entries(clips).forEach(([id, clip]) => {
+      if (clip.node && clip.started) {
+        clip.node.stop();
+        clip.started = false;
+      }
+    });
+    this.setState(clips);
   }
 
   stopPlaybackTimer() {
@@ -80,18 +117,17 @@ class Thumper extends React.Component {
   }
 
   stop() {
-    // stop playing audio, also
+    this.stopAudio();
     this.stopPlaybackTimer();
     if (this.state.recording) {
       this.stopRecording();
     }
   }
 
-  async makeAudioBuffer(chunks) {
+  async makeAudioBuf(chunks) {
     const blob = new Blob(chunks, {'type' : 'audio/ogg; codecs=opus'});
     const arrayBuf = await blob.arrayBuffer();
-    const audioBuf = await this.audioCtx.decodeAudioData(arrayBuf);
-    return audioBuf;
+    return await this.audioCtx.decodeAudioData(arrayBuf);
   }
 
   stopRecording() {
@@ -124,9 +160,7 @@ class Thumper extends React.Component {
   render() {
     return (
       <div>
-        <div>Playback pos: {this.state.playbackPosition}</div>
-        <div>Playing: {this.state.playing + ""}</div>
-        <div>Recording: {this.state.recording + ""}</div>
+        <div>{JSON.stringify(this.state)}</div>
         <Transport
           playing={this.state.playing}
           recording={this.state.recording}
@@ -143,40 +177,6 @@ class Thumper extends React.Component {
         <TrackList tracks={this.state.tracks} scale={this.state.scale}/>
       </div>
     );
-  }
-}
-
-class Clip extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      node: null,
-    };
-  }
-
-  play() {
-    const {audioCtx, audioBuf} = this.props;
-    if (this.state.node !== null) {
-      this.state.node.stop();
-      this.setState({node: null});
-    }
-    const node = audioCtx.createBufferSource();
-    node.buffer = audioBuf;
-    node.connect(audioCtx.destination);
-    node.loop = true;
-    node.start();
-    this.setState({node});
-  }
-
-  stop() {
-    this.state.node.stop();
-    window.cancelAnimationFrame(this.state.callbackId);
-  }
-
-  render() {
-    return <div>
-      clip
-    </div>
   }
 }
 
