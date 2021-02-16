@@ -16,14 +16,17 @@ loopah in yah browsah
 [] recording preserves current play state
 [x] play audio again
 [/] pause audio, when paused (on play, figure out where in each buffer we need to start playing from)
-[] playback timeline
-[] looping
+[x] playback timeline
+[/] looping
+  [] have to be able to play audio from the middle
+  [] make loop start/end handles draggable instead of using the weird input
+[] drag clips
 [] overdubbing
-[] click to set looping start/stop points
+[] unarm track after recording
 [] CSS
 
 [] fix annoying clicking sound at the beginning of recording
-[] allow clips to have names / generate automatically
+[x] allow clips to have names / generate automatically
 
 
 [] audio normalization

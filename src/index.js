@@ -14,6 +14,8 @@ class Thumper extends React.Component {
     this.state = {
       recording: false,
       playing: false,
+      loopStart: null,
+      loopEnd: null,
       playbackPosition: 0,
       pausedPosition: 0,
       scale: 50,
@@ -28,6 +30,9 @@ class Thumper extends React.Component {
     this.stop = this.stop.bind(this);
     this.record = this.record.bind(this);
     this.tick = this.tick.bind(this);
+    this.armTrack = this.armTrack.bind(this);
+    this.setLoopStart = this.setLoopStart.bind(this);
+    this.setLoopEnd = this.setLoopEnd.bind(this);
   }
 
   async componentDidMount() {
@@ -50,18 +55,41 @@ class Thumper extends React.Component {
   async stageClip() {
     const audioBuf = await this.makeAudioBuf(this.state.chunks);
     const {clips, tracks} = this.state;
+    let {loopStart, loopEnd} = this.state;
     const clipName = makeName(5);
+    if (loopStart === null || loopEnd === null) {
+      loopStart = this.state.startedRecording;
+      loopEnd = loopStart + audioBuf.duration;
+    }
     clips[clipName] = {audioBuf, start: this.state.startedRecording};
     const armedTrack = tracks[this.state.armedTrack];
     armedTrack.push({start: this.state.startedRecording, audioBuf});
-    this.setState({clips, tracks, chunks: [], startedRecording: null});
+    this.setState({clips, tracks, loopStart, loopEnd, chunks: [], startedRecording: null});
   }
 
-  tick() {
+  armTrack(armedTrack) {
+    this.setState({armedTrack});
+  }
+
+  setLoopStart(loopStart) {
+    this.setState({loopStart});
+  }
+
+  setLoopEnd(loopEnd) {
+    this.setState({loopEnd});
+  }
+
+  async tick() {
     const now = this.audioCtx.currentTime;
-    if (this.state.playing) {
-      const playbackPosition = (now - this.state.playedAt) + this.state.pausedPosition;
-      this.setState({playbackPosition});
+    const {playedAt, pausedPosition, loopStart, loopEnd, playing} = this.state;
+    if (playing) {
+      const playbackPosition = (now - playedAt) + pausedPosition;
+      if (loopEnd !== null && loopStart !== null && playbackPosition > loopEnd) {
+        await this.setState({playbackPosition: loopStart, pausedPosition: loopStart});
+        this.play();
+      } else {
+        this.setState({playbackPosition});
+      }
     }
     window.requestAnimationFrame(this.tick);
   }
@@ -159,8 +187,13 @@ class Thumper extends React.Component {
 
   render() {
     return (
-      <div>
-        <div>{JSON.stringify(this.state)}</div>
+      <div style={{position: "relative"}}>
+        <div>
+          loop start: <input onChange={(e) => this.setLoopStart(parseFloat(e.target.value))} />
+        </div>
+        <div>
+          loop end: <input onChange={(e) => this.setLoopEnd(parseFloat(e.target.value))} />
+        </div>
         <Transport
           playing={this.state.playing}
           recording={this.state.recording}
@@ -173,8 +206,17 @@ class Thumper extends React.Component {
           width={800}
           time={this.state.playbackPosition}
           scale={this.state.scale}
+          loopStart={this.state.loopStart}
+          loopEnd={this.state.loopEnd}
+          setLoopStart={this.setLoopStart}
+          setLoopEnd={this.setLoopEnd}
         />
-        <TrackList tracks={this.state.tracks} scale={this.state.scale}/>
+        <TrackList
+          tracks={this.state.tracks}
+          scale={this.state.scale}
+          armTrack={this.armTrack}
+          armedTrack={this.state.armedTrack}
+        />
       </div>
     );
   }
