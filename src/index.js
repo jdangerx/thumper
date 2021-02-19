@@ -86,6 +86,7 @@ class Thumper extends React.Component {
       const playbackPosition = (now - playedAt) + pausedPosition;
       if (loopEnd !== null && loopStart !== null && playbackPosition > loopEnd) {
         await this.setState({playbackPosition: loopStart, pausedPosition: loopStart});
+        this.stopAudio();
         this.play();
       } else {
         this.setState({playbackPosition});
@@ -111,14 +112,13 @@ class Thumper extends React.Component {
       node.connect(this.audioCtx.destination);
       clips[id].node = node;
       const delay = clip.start - this.state.playbackPosition;
-      console.log(clip);
-      console.log(delay);
       if (delay >= 0) {
-        console.log(id, delay);
         node.start(this.audioCtx.currentTime + delay);
         clips[id].started = true;
+      } else if (-delay <= clip.audioBuf.duration) {
+        node.start(this.audioCtx.currentTime, -delay);
+        clips[id].started = true;
       }
-      // TODO: start clips we're in the middle of
     });
     this.setState(clips);
   }

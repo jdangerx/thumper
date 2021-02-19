@@ -15,22 +15,23 @@ loopah in yah browsah
 [x] add notion of pausing (oh! then we don't have to get rid of the requestAnimationFrame)
 [] recording preserves current play state
 [x] play audio again
-[/] pause audio, when paused (on play, figure out where in each buffer we need to start playing from)
+[x] pause audio, when paused (on play, figure out where in each buffer we need to start playing from)
 [x] playback timeline
 [/] looping
-  [] have to be able to play audio from the middle
+  [x] have to be able to play audio from the middle
   [] make loop start/end handles draggable instead of using the weird input
 [] drag clips
 [] overdubbing
 [] unarm track after recording
 [] CSS
+[] add ticks in track based on scale
 
-[] fix annoying clicking sound at the beginning of recording
 [x] allow clips to have names / generate automatically
 
 
 [] audio normalization
 [] click track?
+[] fix annoying clicking sound at the beginning of recording
 
 [] websockets for collaboration
   [] connect to a websocket server
