@@ -15,11 +15,11 @@ class Thumper extends React.Component {
       recording: false,
       playing: false,
       loopStart: null,
-      draggingFocus: null,
+      dragFocus: null,
       loopEnd: null,
       playbackPosition: 0,
       pausedPosition: 0,
-      scale: 50,
+      scale: 200,
       armedTrack: 0,
       clips: {}, // {some-id: {node: AudioBufSourceNode, audioBuf: AudioBuf, pos: ms}}
       tracks: [[], [], [], []], // TODO: make a track just a list of clip IDs
@@ -32,8 +32,10 @@ class Thumper extends React.Component {
     this.record = this.record.bind(this);
     this.tick = this.tick.bind(this);
     this.armTrack = this.armTrack.bind(this);
-    this.setLoopStart = this.setLoopStart.bind(this);
-    this.setLoopEnd = this.setLoopEnd.bind(this);
+    this.dragFocus = this.dragFocus.bind(this);
+    this.clearDrag = this.clearDrag.bind(this);
+    this.dragMove = this.dragMove.bind(this);
+    this.deleteClip = this.deleteClip.bind(this);
   }
 
   async componentDidMount() {
@@ -65,30 +67,59 @@ class Thumper extends React.Component {
     const clip = {audioBuf, pos: this.state.startedRecording};
     clips[clipName] = clip
     const armedTrack = tracks[this.state.armedTrack];
-    armedTrack.push(clip);
+    armedTrack.push(clipName);
     this.setState({clips, tracks, loopStart, loopEnd, chunks: [], startedRecording: null, armedTrack: null});
   }
 
-  dragFocus(element) {
-    // if element is not loopStart, loopEnd, or a clip ID, don't focus it!
+  deleteClip(clipId) {
+    const {clips, tracks} = this.state;
+    const filteredTracks = tracks.map(
+      track => track.filter(id => id !== clipId)
+    );
+    delete clips[clipId];
+    this.setState({clips, tracks: filteredTracks});
   }
 
-  dragMove() {
-    // figure out how much the drag has moved.
-    // then change state based on if it's a clip or the loop start/end indicators.
-    // i forget about how JS does aliasing - might need to change `tracks` to a list of clip ids.
+  dragFocus(element) {
+    if (element !== "LOOP_START" && element !== "LOOP_END" && !this.state.clips[element]) {
+      return;
+    }
+    this.setState({dragFocus: element});
+  }
+
+  clearDrag() {
+    if (this.state.dragFocus) {
+      this.setState({dragFocus: null});
+    }
+  }
+
+  dragMove(event) {
+    const {loopStart, loopEnd, scale} = this.state;
+    const timeDelta = event.movementX / scale;
+    switch (this.state.dragFocus) {
+      case null:
+        break;
+      case "LOOP_START":
+        const newLoopStart = Math.min(loopStart + timeDelta, loopEnd);
+        this.setState({loopStart: newLoopStart});
+        break;
+      case "LOOP_END":
+        const newLoopEnd = Math.max(loopEnd + timeDelta, loopStart);
+        this.setState({loopEnd: newLoopEnd});
+        break;
+      default:
+        const {clips, dragFocus} = this.state;
+        const clip = clips[dragFocus];
+        clip.pos += timeDelta;
+        this.setState({clips});
+    }
   }
 
   armTrack(armedTrack) {
+    if (this.state.armedTrack === armedTrack) {
+      armedTrack = null;
+    }
     this.setState({armedTrack});
-  }
-
-  setLoopStart(loopStart) {
-    this.setState({loopStart});
-  }
-
-  setLoopEnd(loopEnd) {
-    this.setState({loopEnd});
   }
 
   async tick() {
@@ -116,8 +147,6 @@ class Thumper extends React.Component {
   playAudio() {
     const clips = this.state.clips;
 
-    // TODO: just make a bunch of nodes ready to play, then return those
-    // later do a quick loop through to set the different timeouts
     Object.entries(clips).forEach(([id, clip]) => {
       const node = this.audioCtx.createBufferSource();
       node.buffer = clip.audioBuf;
@@ -201,7 +230,7 @@ class Thumper extends React.Component {
 
   render() {
     return (
-      <div style={{position: "relative"}}>
+      <div style={{position: "relative"}} onMouseUp={this.clearDrag} onMouseMove={this.dragMove}>
         <div>
           loop start: <input onChange={(e) => this.setLoopStart(parseFloat(e.target.value))} />
         </div>
@@ -222,14 +251,16 @@ class Thumper extends React.Component {
           scale={this.state.scale}
           loopStart={this.state.loopStart}
           loopEnd={this.state.loopEnd}
-          setLoopStart={this.setLoopStart}
-          setLoopEnd={this.setLoopEnd}
+          focus={this.dragFocus}
         />
         <TrackList
+          clips={this.state.clips}
           tracks={this.state.tracks}
           scale={this.state.scale}
           armTrack={this.armTrack}
           armedTrack={this.state.armedTrack}
+          focus={this.dragFocus}
+          deleteClip={this.deleteClip}
         />
       </div>
     );

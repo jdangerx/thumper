@@ -8,12 +8,16 @@ class Timeline extends React.Component {
       loopStartHandle = <LoopStart
         pos={this.props.loopStart}
         scale={this.props.scale}
-        setPos={this.props.setLoopStart}
+        focus={this.props.focus}
       />
     }
 
     if (this.props.loopEnd !== null) {
-      loopEndHandle = <LoopEnd pos={this.props.loopEnd} scale={this.props.scale} />
+      loopEndHandle = <LoopEnd
+        pos={this.props.loopEnd}
+        scale={this.props.scale}
+        focus={this.props.focus}
+      />
     }
     return (<div style={{background: '#CCC'}} width={this.props.width}>
       <VerticalLine color={"red"} pos={this.props.time} scale={this.props.scale} />
@@ -40,6 +44,7 @@ class LoopStart extends React.Component {
   constructor(props) {
     super(props);
     this.state = {dragging: false};
+    this.focus = this.props.focus.bind(this, "LOOP_START");
   }
 
   render() {
@@ -52,11 +57,17 @@ class LoopStart extends React.Component {
       height: "600px",
       zIndex: 1000,
     }
-    return (<div style={style}></div>);
+    return <div style={style} onMouseDown={this.focus}></div>;
   }
 }
 
 class LoopEnd extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {dragging: false};
+    this.focus = this.props.focus.bind(this, "LOOP_END");
+  }
+
   render() {
     const style = {
       position: "absolute",
@@ -67,7 +78,7 @@ class LoopEnd extends React.Component {
       height: "600px",
       zIndex: 1000,
     }
-    return <div style={style}></div>;
+    return <div style={style} onMouseDown={this.focus}></div>;
   }
 }
 

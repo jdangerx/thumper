@@ -17,14 +17,17 @@ loopah in yah browsah
 [x] play audio again
 [x] pause audio, when paused (on play, figure out where in each buffer we need to start playing from)
 [x] playback timeline
-[/] looping
+[x] looping
   [x] have to be able to play audio from the middle
-  [] make loop start/end handles draggable instead of using the weird input
-[] drag clips
+  [x] make loop start/end handles draggable instead of using the weird input
+[x] drag clips
 [] overdubbing
 [x] unarm track after recording
 [] CSS
 [] add ticks in track based on scale
+[] scrolling
+[x] clip deletion - ctrl click?
+[] help text
 
 [x] allow clips to have names / generate automatically
 

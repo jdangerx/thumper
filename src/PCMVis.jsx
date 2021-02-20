@@ -4,10 +4,24 @@ class PCMVis extends React.Component {
   constructor(props) {
     super(props);
     this.canvasRef = React.createRef();
+    this.dragFocus = this.dragFocus.bind(this);
+    this.onClick = this.onClick.bind(this);
   }
 
   componentDidMount() {
     this.updateCanvas();
+  }
+
+  onClick(e) {
+    e.stopPropagation();
+    if (e.ctrlKey) {
+      this.props.deleteClip(this.props.clipId);
+    }
+  }
+
+  dragFocus(e) {
+    e.stopPropagation();
+    this.props.focus(this.props.clipId);
   }
 
   updateCanvas() {
@@ -34,6 +48,8 @@ class PCMVis extends React.Component {
       width={width}
       height={this.props.height}
       style ={style}
+      onMouseDown={this.dragFocus}
+      onClick={this.onClick}
     />
   }
 }
