@@ -27,7 +27,7 @@ class PCMVis extends React.Component {
   }
 
   render() {
-    const style = {position: "absolute", left: this.props.start * this.props.scale};
+    const style = {position: "absolute", left: this.props.pos * this.props.scale};
     const width = this.props.audioBuf.duration * this.props.scale;
     return <canvas
       ref={this.canvasRef}

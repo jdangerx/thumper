@@ -22,7 +22,7 @@ class Track extends React.Component {
     return <div style={style} onClick={this.onclick}>
       {this.props.clips.map((clip, index) => (
         <PCMVis
-          start={clip.start}
+          pos={clip.pos}
           audioBuf={clip.audioBuf}
           scale={this.props.scale}
           height={150}

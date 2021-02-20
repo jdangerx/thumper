@@ -22,12 +22,13 @@ loopah in yah browsah
   [] make loop start/end handles draggable instead of using the weird input
 [] drag clips
 [] overdubbing
-[] unarm track after recording
+[x] unarm track after recording
 [] CSS
 [] add ticks in track based on scale
 
 [x] allow clips to have names / generate automatically
 
+[] recording without having the loop repeat one time has a funny start time
 
 [] audio normalization
 [] click track?

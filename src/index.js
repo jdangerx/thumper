@@ -15,13 +15,14 @@ class Thumper extends React.Component {
       recording: false,
       playing: false,
       loopStart: null,
+      draggingFocus: null,
       loopEnd: null,
       playbackPosition: 0,
       pausedPosition: 0,
       scale: 50,
       armedTrack: 0,
-      clips: {}, // {some-id: {node: AudioBufSourceNode, audioBuf: AudioBuf, startTime: ms, callback: callback ID}}
-      tracks: [[], [], [], []], // TODO: actually each track is just a list of clip IDs
+      clips: {}, // {some-id: {node: AudioBufSourceNode, audioBuf: AudioBuf, pos: ms}}
+      tracks: [[], [], [], []], // TODO: make a track just a list of clip IDs
       chunks: [],
     };
 
@@ -56,15 +57,26 @@ class Thumper extends React.Component {
     const audioBuf = await this.makeAudioBuf(this.state.chunks);
     const {clips, tracks} = this.state;
     let {loopStart, loopEnd} = this.state;
-    const clipName = makeName(5);
+    const clipName = makeName(3);
     if (loopStart === null || loopEnd === null) {
       loopStart = this.state.startedRecording;
       loopEnd = loopStart + audioBuf.duration;
     }
-    clips[clipName] = {audioBuf, start: this.state.startedRecording};
+    const clip = {audioBuf, pos: this.state.startedRecording};
+    clips[clipName] = clip
     const armedTrack = tracks[this.state.armedTrack];
-    armedTrack.push({start: this.state.startedRecording, audioBuf});
-    this.setState({clips, tracks, loopStart, loopEnd, chunks: [], startedRecording: null});
+    armedTrack.push(clip);
+    this.setState({clips, tracks, loopStart, loopEnd, chunks: [], startedRecording: null, armedTrack: null});
+  }
+
+  dragFocus(element) {
+    // if element is not loopStart, loopEnd, or a clip ID, don't focus it!
+  }
+
+  dragMove() {
+    // figure out how much the drag has moved.
+    // then change state based on if it's a clip or the loop start/end indicators.
+    // i forget about how JS does aliasing - might need to change `tracks` to a list of clip ids.
   }
 
   armTrack(armedTrack) {
@@ -111,7 +123,7 @@ class Thumper extends React.Component {
       node.buffer = clip.audioBuf;
       node.connect(this.audioCtx.destination);
       clips[id].node = node;
-      const delay = clip.start - this.state.playbackPosition;
+      const delay = clip.pos - this.state.playbackPosition;
       if (delay >= 0) {
         node.start(this.audioCtx.currentTime + delay);
         clips[id].started = true;
@@ -124,7 +136,6 @@ class Thumper extends React.Component {
   }
 
   pause() {
-    // TODO suspend the audio context?? makes this async
     this.stopAudio();
     this.setState({playing: false, pausedPosition: this.state.playbackPosition});
   }
@@ -165,11 +176,14 @@ class Thumper extends React.Component {
   }
 
   startRecording() {
-    this.state.recorder.start();
+    if (this.state.armedTrack === null) {
+      return;
+    }
     if (this.state.playing) {
       this.pause();
     }
     this.play();
+    this.state.recorder.start();
     this.setState({recording: true, startedRecording: this.state.playbackPosition});
   }
 
