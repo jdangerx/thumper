@@ -19,7 +19,7 @@ class Timeline extends React.Component {
         focus={this.props.focus}
       />
     }
-    return (<div style={{background: '#CCC'}} width={this.props.width}>
+    return (<div>
       <VerticalLine color={"red"} pos={this.props.time} scale={this.props.scale} />
       {loopStartHandle}
       {loopEndHandle}
@@ -72,8 +72,8 @@ class LoopEnd extends React.Component {
 
   render() {
     const style = {
-      position: "absolute",
       left: this.props.pos * this.props.scale,
+      position: "absolute",
       borderLeft: "1px solid blue",
       boxSizing: "border-box",
       background: "rgba(0, 0, 255, 0.1)",

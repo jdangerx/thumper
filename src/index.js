@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import './index.css';
 
 import { makeName } from './utils';
 
@@ -257,7 +258,7 @@ class Thumper extends React.Component {
 
   render() {
     return (
-      <div style={{position: "relative"}} onMouseUp={this.clearDrag} onMouseMove={this.dragMove}>
+      <div onMouseUp={this.clearDrag} onMouseMove={this.dragMove}>
         <Transport
           playing={this.state.playing}
           recording={this.state.recording}
@@ -267,23 +268,25 @@ class Thumper extends React.Component {
           record={this.record}
           initializeAudioCtx={this.initializeAudioCtx}
         />
-        <Timeline
-          width={800}
-          time={this.state.playbackPosition}
-          scale={this.state.scale}
-          loopStart={this.state.loopStart}
-          loopEnd={this.state.loopEnd}
-          focus={this.dragFocus}
-        />
-        <TrackList
-          clips={this.state.clips}
-          tracks={this.state.tracks}
-          scale={this.state.scale}
-          armTrack={this.armTrack}
-          armedTrack={this.state.armedTrack}
-          focus={this.dragFocus}
-          deleteClip={this.deleteClip}
-        />
+        <div className={"relative"}>
+          <Timeline
+            width={800}
+            time={this.state.playbackPosition}
+            scale={this.state.scale}
+            loopStart={this.state.loopStart}
+            loopEnd={this.state.loopEnd}
+            focus={this.dragFocus}
+          />
+          <TrackList
+            clips={this.state.clips}
+            tracks={this.state.tracks}
+            scale={this.state.scale}
+            armTrack={this.armTrack}
+            armedTrack={this.state.armedTrack}
+            focus={this.dragFocus}
+            deleteClip={this.deleteClip}
+          />
+        </div>
       </div>
     );
   }

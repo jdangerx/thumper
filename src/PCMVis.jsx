@@ -30,8 +30,8 @@ class PCMVis extends React.Component {
     const data = this.props.audioBuf.getChannelData(0);
     const stepSize = Math.floor(this.props.audioBuf.length / canvas.width);
     const heightScale = canvas.height/2;
-    ctx.fillStyle = "#CCC";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height-1);
     ctx.fillStyle = "#333";
     for (let x = 0; x < canvas.width; x++) {
       const index = Math.min(x * stepSize, data.length-1);
