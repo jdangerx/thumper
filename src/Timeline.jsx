@@ -33,6 +33,7 @@ class VerticalLine extends React.Component {
       position: "absolute",
       left: this.props.pos * this.props.scale,
       borderLeft: `1px solid ${this.props.color}`,
+      boxSizing: "border-box",
       height: "600px",
       zIndex: 1000,
     }
@@ -52,10 +53,11 @@ class LoopStart extends React.Component {
       position: "absolute",
       left: this.props.pos * this.props.scale - 10,
       borderRight: "1px solid blue",
+      boxSizing: "border-box",
       background: "rgba(0, 0, 255, 0.1)",
       width: "10px",
       height: "600px",
-      zIndex: 1000,
+      zIndex: 999,
     }
     return <div style={style} onMouseDown={this.focus}></div>;
   }
@@ -73,10 +75,11 @@ class LoopEnd extends React.Component {
       position: "absolute",
       left: this.props.pos * this.props.scale,
       borderLeft: "1px solid blue",
+      boxSizing: "border-box",
       background: "rgba(0, 0, 255, 0.1)",
       width: "10px",
       height: "600px",
-      zIndex: 1000,
+      zIndex: 999,
     }
     return <div style={style} onMouseDown={this.focus}></div>;
   }

@@ -14,15 +14,15 @@ class Thumper extends React.Component {
     this.state = {
       recording: false,
       playing: false,
-      loopStart: null,
+      loopStart: 1,
+      loopEnd: 10,
+      playbackPosition: 1,
+      pausedPosition: 1,
       dragFocus: null,
-      loopEnd: null,
-      playbackPosition: 0,
-      pausedPosition: 0,
-      scale: 200,
+      scale: 50,
       armedTrack: 0,
       clips: {}, // {some-id: {node: AudioBufSourceNode, audioBuf: AudioBuf, pos: ms}}
-      tracks: [[], [], [], []], // TODO: make a track just a list of clip IDs
+      tracks: [[], [], [], []],
       chunks: [],
     };
 
@@ -36,6 +36,7 @@ class Thumper extends React.Component {
     this.clearDrag = this.clearDrag.bind(this);
     this.dragMove = this.dragMove.bind(this);
     this.deleteClip = this.deleteClip.bind(this);
+    this.initializeAudioCtx = this.initializeAudioCtx.bind(this);
   }
 
   async componentDidMount() {
@@ -52,6 +53,13 @@ class Thumper extends React.Component {
   componentWillUnmount() {
     if (this.state.stream) {
       this.state.stream.getTracks().forEach(track => track.stop());
+    }
+  }
+
+  // Chrome doesn't let you initialize audioContext until after a user gesture
+  initializeAudioCtx() {
+    if (!this.audioCtx) {
+      this.audioCtx = new AudioContext();
     }
   }
 
@@ -88,8 +96,12 @@ class Thumper extends React.Component {
   }
 
   clearDrag() {
-    if (this.state.dragFocus) {
-      this.setState({dragFocus: null});
+    const {dragFocus, clips} = this.state;
+    if (dragFocus) {
+      if (clips[dragFocus]) {
+        clips[dragFocus].started = false;
+      }
+      this.setState({dragFocus: null, clips});
     }
   }
 
@@ -148,24 +160,32 @@ class Thumper extends React.Component {
     const clips = this.state.clips;
 
     Object.entries(clips).forEach(([id, clip]) => {
-      const node = this.audioCtx.createBufferSource();
-      node.buffer = clip.audioBuf;
-      node.connect(this.audioCtx.destination);
-      clips[id].node = node;
-      const delay = clip.pos - this.state.playbackPosition;
-      if (delay >= 0) {
-        node.start(this.audioCtx.currentTime + delay);
-        clips[id].started = true;
-      } else if (-delay <= clip.audioBuf.duration) {
-        node.start(this.audioCtx.currentTime, -delay);
-        clips[id].started = true;
-      }
+      clips[id] = this.playClip(clip);
     });
     this.setState(clips);
   }
 
+  playClip(clip) {
+    const node = this.audioCtx.createBufferSource();
+    node.buffer = clip.audioBuf;
+    node.connect(this.audioCtx.destination);
+    clip.node = node;
+    const delay = clip.pos - this.state.playbackPosition;
+    if (delay >= 0) {
+      node.start(this.audioCtx.currentTime + delay);
+      clip.started = true;
+    } else if (-delay <= clip.audioBuf.duration) {
+      node.start(this.audioCtx.currentTime, -delay);
+      clip.started = true;
+    }
+    return clip;
+  }
+
   pause() {
     this.stopAudio();
+    if (this.state.recording) {
+      this.stopRecording();
+    }
     this.setState({playing: false, pausedPosition: this.state.playbackPosition});
   }
 
@@ -173,8 +193,16 @@ class Thumper extends React.Component {
     const clips = this.state.clips;
     Object.entries(clips).forEach(([id, clip]) => {
       if (clip.node && clip.started) {
-        clip.node.stop();
-        clip.started = false;
+        try {
+          clip.node.stop();
+        } catch(e) {
+          if (e instanceof DOMException && e.name === "InvalidStateError") {
+            // this is fine
+            console.log(e);
+          } else {
+            throw e;
+          }
+        }
       }
     });
     this.setState(clips);
@@ -200,7 +228,6 @@ class Thumper extends React.Component {
 
   stopRecording() {
     this.state.recorder.stop();
-    this.pause()
     this.setState({recording: false});
   }
 
@@ -231,12 +258,6 @@ class Thumper extends React.Component {
   render() {
     return (
       <div style={{position: "relative"}} onMouseUp={this.clearDrag} onMouseMove={this.dragMove}>
-        <div>
-          loop start: <input onChange={(e) => this.setLoopStart(parseFloat(e.target.value))} />
-        </div>
-        <div>
-          loop end: <input onChange={(e) => this.setLoopEnd(parseFloat(e.target.value))} />
-        </div>
         <Transport
           playing={this.state.playing}
           recording={this.state.recording}
@@ -244,6 +265,7 @@ class Thumper extends React.Component {
           pause={this.pause}
           stop={this.stop}
           record={this.record}
+          initializeAudioCtx={this.initializeAudioCtx}
         />
         <Timeline
           width={800}

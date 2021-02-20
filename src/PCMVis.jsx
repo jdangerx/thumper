@@ -14,7 +14,7 @@ class PCMVis extends React.Component {
 
   onClick(e) {
     e.stopPropagation();
-    if (e.ctrlKey) {
+    if (e.ctrlKey && e.shiftKey) {
       this.props.deleteClip(this.props.clipId);
     }
   }
