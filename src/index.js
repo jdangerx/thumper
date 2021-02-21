@@ -15,10 +15,11 @@ class Thumper extends React.Component {
     this.state = {
       recording: false,
       playing: false,
+      helpVisible: false,
       loopStart: 1,
       loopEnd: 10,
-      playbackPosition: 1,
-      pausedPosition: 1,
+      playbackPosition: 0,
+      pausedPosition: 0,
       dragFocus: null,
       scale: 50,
       armedTrack: 0,
@@ -38,6 +39,7 @@ class Thumper extends React.Component {
     this.dragMove = this.dragMove.bind(this);
     this.deleteClip = this.deleteClip.bind(this);
     this.initializeAudioCtx = this.initializeAudioCtx.bind(this);
+    this.toggleHelp = this.toggleHelp.bind(this);
   }
 
   async componentDidMount() {
@@ -168,8 +170,12 @@ class Thumper extends React.Component {
 
   playClip(clip) {
     const node = this.audioCtx.createBufferSource();
+    const compressor = this.audioCtx.createDynamicsCompressor();
+    compressor.ratio.setValueAtTime(5, this.audioCtx.currentTime);
     node.buffer = clip.audioBuf;
-    node.connect(this.audioCtx.destination);
+    node.connect(compressor);
+    console.log(compressor);
+    compressor.connect(this.audioCtx.destination);
     clip.node = node;
     const delay = clip.pos - this.state.playbackPosition;
     if (delay >= 0) {
@@ -221,6 +227,10 @@ class Thumper extends React.Component {
     }
   }
 
+  toggleHelp() {
+    this.setState({helpVisible: !this.state.helpVisible});
+  }
+
   async makeAudioBuf(chunks) {
     const blob = new Blob(chunks, {'type' : 'audio/ogg; codecs=opus'});
     const arrayBuf = await blob.arrayBuffer();
@@ -258,34 +268,50 @@ class Thumper extends React.Component {
 
   render() {
     return (
-      <div onMouseUp={this.clearDrag} onMouseMove={this.dragMove}>
-        <Transport
-          playing={this.state.playing}
-          recording={this.state.recording}
-          play={this.play}
-          pause={this.pause}
-          stop={this.stop}
-          record={this.record}
-          initializeAudioCtx={this.initializeAudioCtx}
-        />
-        <div className={"relative"}>
-          <Timeline
-            width={800}
-            time={this.state.playbackPosition}
-            scale={this.state.scale}
-            loopStart={this.state.loopStart}
-            loopEnd={this.state.loopEnd}
-            focus={this.dragFocus}
+      <div>
+        <div
+          className={`${this.state.helpVisible? "" : "hidden"} z-50 bg-gray-600 w-full h-full fixed flex bg-opacity-50 transition-opacity`}
+          onClick={this.toggleHelp}
+        >
+          <div className="text-base p-8 bg-white max-w-md flex-col m-auto">
+            To arm a track for recording, click on an unoccupied space in that track.<br/>
+            Drag the blue handles to change the loop boundaries.<br/>
+            Drag the clips to move them around within their track.<br/>
+            Ctrl+shift-click a clip to delete it.<br/>
+            Each tick mark represents one second.<br/>
+          </div>
+        </div>
+
+        <div className="container mx-auto" onMouseUp={this.clearDrag} onMouseMove={this.dragMove}>
+          <Transport
+            playing={this.state.playing}
+            recording={this.state.recording}
+            play={this.play}
+            pause={this.pause}
+            stop={this.stop}
+            record={this.record}
+            initializeAudioCtx={this.initializeAudioCtx}
+            toggleHelp={this.toggleHelp}
           />
-          <TrackList
-            clips={this.state.clips}
-            tracks={this.state.tracks}
-            scale={this.state.scale}
-            armTrack={this.armTrack}
-            armedTrack={this.state.armedTrack}
-            focus={this.dragFocus}
-            deleteClip={this.deleteClip}
-          />
+          <div className="relative">
+            <Timeline
+              width={800}
+              time={this.state.playbackPosition}
+              scale={this.state.scale}
+              loopStart={this.state.loopStart}
+              loopEnd={this.state.loopEnd}
+              focus={this.dragFocus}
+            />
+            <TrackList
+              clips={this.state.clips}
+              tracks={this.state.tracks}
+              scale={this.state.scale}
+              armTrack={this.armTrack}
+              armedTrack={this.state.armedTrack}
+              focus={this.dragFocus}
+              deleteClip={this.deleteClip}
+            />
+          </div>
         </div>
       </div>
     );

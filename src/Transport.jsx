@@ -1,37 +1,32 @@
 import React from 'react';
 
 class Transport extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {helpVisible: false}
-    this.toggleHelp = this.toggleHelp.bind(this);
-  }
-
-  toggleHelp() {
-    this.setState({helpVisible: !this.state.helpVisible});
-  }
-
   render() {
-    const help = (<div>
-      To arm a track for recording, click on an unoccupied space in that track.<br/>
-      Drag the blue handles to change the loop boundaries.<br/>
-      Drag the clips to move them around within their track.<br/>
-      Ctrl+shift-click a clip to delete it.<br/>
-      Each tick mark represents one second.<br/>
-    </div>);
-
-    return <div onClick={this.props.initializeAudioCtx}>
-      <button
-        onClick={this.props.playing ? this.props.pause : this.props.play}>
-        {this.props.playing ? "⏸" : "▶"}
-      </button>
-      <button onClick={this.props.stop}>⏹</button>
-      <button
-        onClick={this.props.record}
-        style={{color: this.props.recording ? "red" : "black"}}
-      >⏺</button>
-      <button onClick={this.toggleHelp}>?</button>
-      {this.state.helpVisible ? help : null}
+    return <div className="block text-xl text-gray-600 py-1" onClick={this.props.initializeAudioCtx}>
+      <div className="flex flex-row">
+        <span className="flex-1 text-yellow-800 font-black inline text-left">thumper</span>
+        <div className="flex-1 text-center">
+          <button
+            className="w-8 hover:text-blue-400 text-center"
+            onClick={this.props.playing ? this.props.pause : this.props.play}>
+            {this.props.playing ? "⏸" : "▶"}
+          </button>
+          <button
+            onClick={this.props.stop}
+            className="w-8 hover:text-blue-400"
+          >⏹</button>
+          <button
+            onClick={this.props.record}
+            className={`w-8 hover:text-blue-400 ${this.props.recording ? "text-red-500" : "text-gray-600"}`}
+          >⏺</button>
+        </div>
+        <div className="flex-1 text-right">
+          <button
+            onClick={this.props.toggleHelp}
+            className="w-8 hover:text-blue-400 flex-1"
+          >?</button>
+        </div>
+      </div>
     </div>
   }
 }

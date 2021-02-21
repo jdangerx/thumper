@@ -41,12 +41,11 @@ class PCMVis extends React.Component {
   }
 
   render() {
-    const style = {position: "absolute", left: this.props.pos * this.props.scale};
     const width = this.props.audioBuf.duration * this.props.scale;
+    const style = {width, left: this.props.pos * this.props.scale};
     return <canvas
       ref={this.canvasRef}
-      width={width}
-      height={this.props.height}
+      className="absolute h-32"
       style ={style}
       onMouseDown={this.dragFocus}
       onClick={this.onClick}

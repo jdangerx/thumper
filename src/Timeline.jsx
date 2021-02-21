@@ -30,36 +30,37 @@ class Timeline extends React.Component {
 class VerticalLine extends React.Component {
   render() {
     const style = {
-      position: "absolute",
-      left: this.props.pos * this.props.scale,
-      borderLeft: `1px solid ${this.props.color}`,
-      boxSizing: "border-box",
-      height: "600px",
-      zIndex: 1000,
+      left: this.props.pos * this.props.scale
     }
-    return <div style={style}></div>;
+    return <div
+      className="absolute border-l border-red-500 min-h-full z-40"
+      style={style}>
+    </div>;
   }
 }
 
 class LoopStart extends React.Component {
   constructor(props) {
     super(props);
-    this.state = {dragging: false};
+    this.state = {dragging: false, offset: 0};
+    this.ref = React.createRef();
     this.focus = this.props.focus.bind(this, "LOOP_START");
+  }
+
+  componentDidMount() {
+    this.setState({offset: this.ref.current.clientWidth});
   }
 
   render() {
     const style = {
-      position: "absolute",
-      left: this.props.pos * this.props.scale - 10,
-      borderRight: "1px solid blue",
-      boxSizing: "border-box",
-      background: "rgba(0, 0, 255, 0.1)",
-      width: "10px",
-      height: "600px",
-      zIndex: 999,
+      left: this.props.pos * this.props.scale - this.state.offset,
     }
-    return <div style={style} onMouseDown={this.focus}></div>;
+    return <div
+      ref={this.ref}
+      style={style}
+      className="absolute border-r border-blue-500 min-h-full z-30 w-4 bg-opacity-10 bg-blue-500"
+      onMouseDown={this.focus}>
+    </div>;
   }
 }
 
@@ -72,16 +73,14 @@ class LoopEnd extends React.Component {
 
   render() {
     const style = {
-      left: this.props.pos * this.props.scale,
-      position: "absolute",
-      borderLeft: "1px solid blue",
-      boxSizing: "border-box",
-      background: "rgba(0, 0, 255, 0.1)",
-      width: "10px",
-      height: "600px",
-      zIndex: 999,
+      left: this.props.pos * this.props.scale
     }
-    return <div style={style} onMouseDown={this.focus}></div>;
+    return <div
+      ref={this.ref}
+      style={style}
+      className="absolute border-l border-blue-500 min-h-full z-40 w-4 bg-opacity-10 bg-blue-500"
+      onMouseDown={this.focus}>
+    </div>;
   }
 }
 

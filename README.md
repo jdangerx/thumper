@@ -22,17 +22,21 @@ loopah in yah browsah
   [x] make loop start/end handles draggable instead of using the weird input
 [x] drag clips
 [x] unarm track after recording
-[] add ticks in track based on scale
+[x] add ticks in track based on scale
 [] scrolling
+[] scaling
 [x] clip deletion - ctrl click?
 [x] help text
-[] CSS - tailwind?
+[x] CSS - tailwind?
+[x] tailwind - get rid of most inline styles
+[] show pcm of clip while you're recording
+[] keep track armed after recording?
 
 [x] allow clips to have names / generate automatically
 
 [] clip envelope editing?
 
-[] audio normalization
+[x] audio normalization
 [] click track?
 [] fix annoying clicking sound at the beginning of recording
 

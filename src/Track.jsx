@@ -13,17 +13,21 @@ class Track extends React.Component {
   }
 
   render() {
-    const light = this.props.armed ? "#FED" : "#EEE";
-    const dark = this.props.armed ? "#DCB" : "#CCC";
+    const yellow_50 = "#FFFBEB";
+    const gray_50 = "#F9FAFB";
+    const yellow_400 = "#FCD34D";
+    const gray_400 = "#D1D5DB";
+    const light = this.props.armed ? yellow_50 : gray_50;
+    const dark = this.props.armed ? yellow_400 : gray_400;
     const {clips, scale} = this.props;
     const style = {
-      height: "150px",
-      background: `repeating-linear-gradient(to right, ${light}, ${light} ${scale-1}px, ${dark} ${scale-1}px, ${dark} ${scale}px)`,
-      boxSizing: "border-box",
-      borderTop: "1px solid #888",
-      borderBottom: "1px solid #888"
+      background: `repeating-linear-gradient(to right, ${dark}, ${dark} 1px, ${light} 1px, ${light} ${scale}px)`
     }
-    return <div style={style} onClick={this.onclick}>
+    return <div
+      className="h-32 bg-opacity-5" 
+      style={style}
+      onClick={this.onclick}
+    >
       {this.props.clipIds.map((clipId) => (
         <PCMVis
           pos={clips[clipId].pos}

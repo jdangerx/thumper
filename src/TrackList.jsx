@@ -4,7 +4,7 @@ import Track from './Track';
 
 class TrackList extends React.Component {
   render() {
-    return <div>
+    return <div className="divide-y-2 border mb-4">
       {this.props.tracks.map((clipIds, index) => (
         <Track
           clips={this.props.clips}
