@@ -39,7 +39,10 @@ loopah in yah browsah
 [x] audio normalization
 [] click track?
 [] fix annoying clicking sound at the beginning of recording
+[] ctrl-click to set playback pos
+  [] this needs some work - get the correct playback pos from click, and make sure the events are getting propagated at the right time
 
+[] import/export
 [] websockets for collaboration
   [] connect to a websocket server
   [] send a message once the recording stops

@@ -11,8 +11,8 @@ import Transport from './Transport';
 class Thumper extends React.Component {
   constructor(props) {
     super(props);
-    this.audioCtx = new AudioContext();
     this.state = {
+      audioCtx: null,
       recording: false,
       playing: false,
       helpVisible: false,
@@ -40,6 +40,7 @@ class Thumper extends React.Component {
     this.deleteClip = this.deleteClip.bind(this);
     this.initializeAudioCtx = this.initializeAudioCtx.bind(this);
     this.toggleHelp = this.toggleHelp.bind(this);
+    this.setPlaybackPos = this.setPlaybackPos.bind(this);
   }
 
   async componentDidMount() {
@@ -50,7 +51,6 @@ class Thumper extends React.Component {
       recorder.onstop = () => this.stageClip();
       this.setState({stream, recorder});
     }
-    window.requestAnimationFrame(this.tick);
   }
 
   componentWillUnmount() {
@@ -60,9 +60,17 @@ class Thumper extends React.Component {
   }
 
   // Chrome doesn't let you initialize audioContext until after a user gesture
-  initializeAudioCtx() {
-    if (!this.audioCtx) {
-      this.audioCtx = new AudioContext();
+  async initializeAudioCtx() {
+    if (!this.state.audioCtx) {
+      const audioCtx = new AudioContext();
+      const compressor = audioCtx.createDynamicsCompressor();
+      compressor.ratio.setValueAtTime(5, audioCtx.currentTime);
+      compressor.connect(audioCtx.destination);
+      const aggregator = audioCtx.createGain();
+      aggregator.gain.setValueAtTime(0.25, audioCtx.currentTime);
+      aggregator.connect(compressor);
+      await this.setState({audioCtx, aggregator});
+      window.requestAnimationFrame(this.tick);
     }
   }
 
@@ -109,6 +117,7 @@ class Thumper extends React.Component {
   }
 
   dragMove(event) {
+    event.stopPropagation();
     const {loopStart, loopEnd, scale} = this.state;
     const timeDelta = event.movementX / scale;
     switch (this.state.dragFocus) {
@@ -138,7 +147,10 @@ class Thumper extends React.Component {
   }
 
   async tick() {
-    const now = this.audioCtx.currentTime;
+    if (this.state.audioCtx === null) {
+      return;
+    }
+    const now = this.state.audioCtx.currentTime;
     const {playedAt, pausedPosition, loopStart, loopEnd, playing} = this.state;
     if (playing) {
       const playbackPosition = (now - playedAt) + pausedPosition;
@@ -154,9 +166,16 @@ class Thumper extends React.Component {
   }
 
   play() {
-    const playedAt = this.audioCtx.currentTime;
+    const playedAt = this.state.audioCtx.currentTime;
     this.playAudio();
     this.setState({playedAt, playing: true});
+  }
+
+  async setPlaybackPos(pos) {
+    await this.setState({playbackPosition: pos});
+    this.pause();
+    this.play();
+
   }
 
   playAudio() {
@@ -169,20 +188,17 @@ class Thumper extends React.Component {
   }
 
   playClip(clip) {
-    const node = this.audioCtx.createBufferSource();
-    const compressor = this.audioCtx.createDynamicsCompressor();
-    compressor.ratio.setValueAtTime(5, this.audioCtx.currentTime);
+    const {audioCtx, aggregator, playbackPosition} = this.state;
+    const node = audioCtx.createBufferSource();
     node.buffer = clip.audioBuf;
-    node.connect(compressor);
-    console.log(compressor);
-    compressor.connect(this.audioCtx.destination);
+    node.connect(aggregator);
     clip.node = node;
-    const delay = clip.pos - this.state.playbackPosition;
+    const delay = clip.pos - playbackPosition;
     if (delay >= 0) {
-      node.start(this.audioCtx.currentTime + delay);
+      node.start(audioCtx.currentTime + delay);
       clip.started = true;
     } else if (-delay <= clip.audioBuf.duration) {
-      node.start(this.audioCtx.currentTime, -delay);
+      node.start(audioCtx.currentTime, -delay);
       clip.started = true;
     }
     return clip;
@@ -234,7 +250,7 @@ class Thumper extends React.Component {
   async makeAudioBuf(chunks) {
     const blob = new Blob(chunks, {'type' : 'audio/ogg; codecs=opus'});
     const arrayBuf = await blob.arrayBuffer();
-    return await this.audioCtx.decodeAudioData(arrayBuf);
+    return await this.state.audioCtx.decodeAudioData(arrayBuf);
   }
 
   stopRecording() {
@@ -282,17 +298,19 @@ class Thumper extends React.Component {
           </div>
         </div>
 
-        <div className="container mx-auto" onMouseUp={this.clearDrag} onMouseMove={this.dragMove}>
-          <Transport
-            playing={this.state.playing}
-            recording={this.state.recording}
-            play={this.play}
-            pause={this.pause}
-            stop={this.stop}
-            record={this.record}
-            initializeAudioCtx={this.initializeAudioCtx}
-            toggleHelp={this.toggleHelp}
-          />
+        <div className="container m-auto" onMouseUp={this.clearDrag} onMouseMove={this.dragMove}>
+          <div>
+            <Transport
+              playing={this.state.playing}
+              recording={this.state.recording}
+              play={this.play}
+              pause={this.pause}
+              stop={this.stop}
+              record={this.record}
+              initializeAudioCtx={this.initializeAudioCtx}
+              toggleHelp={this.toggleHelp}
+            />
+          </div>
           <div className="relative">
             <Timeline
               width={800}
@@ -310,6 +328,7 @@ class Thumper extends React.Component {
               armedTrack={this.state.armedTrack}
               focus={this.dragFocus}
               deleteClip={this.deleteClip}
+              setPlaybackPos={this.setPlaybackPos}
             />
           </div>
         </div>
