@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 
-import { makeName } from './utils';
+import { makeName, b64encode } from './utils';
 
 import Timeline from './Timeline';
 import TrackList from './TrackList';
@@ -41,6 +41,22 @@ class Thumper extends React.Component {
     this.initializeAudioCtx = this.initializeAudioCtx.bind(this);
     this.toggleHelp = this.toggleHelp.bind(this);
     this.setPlaybackPos = this.setPlaybackPos.bind(this);
+    this.export = this.export.bind(this);
+  }
+
+  async export() {
+    const b64encoded = await Promise.all(Object.entries(this.state.clips)
+      .map(async ([clipId, clip]) => {
+        const rawArray = clip.audioBuf.getChannelData(0).buffer;
+        const oggArray = await clip.ogg.arrayBuffer();
+        clip.oggB64 = b64encode(oggArray);
+        console.log(clip.oggB64.length);
+        return [clipId, clip];
+      }));
+
+    const savefile = {clips: Object.fromEntries(b64encoded), tracks: this.state.tracks};
+    console.log(JSON.stringify(savefile));
+    return JSON.stringify(savefile);
   }
 
   async componentDidMount() {
@@ -75,7 +91,7 @@ class Thumper extends React.Component {
   }
 
   async stageClip() {
-    const audioBuf = await this.makeAudioBuf(this.state.chunks);
+    const {ogg, audioBuf} = await this.makeAudioBuf(this.state.chunks);
     const {clips, tracks} = this.state;
     let {loopStart, loopEnd} = this.state;
     const clipName = makeName(3);
@@ -83,7 +99,7 @@ class Thumper extends React.Component {
       loopStart = this.state.startedRecording;
       loopEnd = loopStart + audioBuf.duration;
     }
-    const clip = {audioBuf, pos: this.state.startedRecording};
+    const clip = {audioBuf, ogg, pos: this.state.startedRecording};
     clips[clipName] = clip
     const armedTrack = tracks[this.state.armedTrack];
     armedTrack.push(clipName);
@@ -249,8 +265,9 @@ class Thumper extends React.Component {
 
   async makeAudioBuf(chunks) {
     const blob = new Blob(chunks, {'type' : 'audio/ogg; codecs=opus'});
-    const arrayBuf = await blob.arrayBuffer();
-    return await this.state.audioCtx.decodeAudioData(arrayBuf);
+    const oggBuf = await blob.arrayBuffer();
+    const audioBuf = await this.state.audioCtx.decodeAudioData(oggBuf);
+    return {ogg: blob, audioBuf};
   }
 
   stopRecording() {
@@ -309,6 +326,7 @@ class Thumper extends React.Component {
               record={this.record}
               initializeAudioCtx={this.initializeAudioCtx}
               toggleHelp={this.toggleHelp}
+              export={this.export}
             />
           </div>
           <div className="relative">

@@ -32,4 +32,11 @@ function makeName(length) {
   return [...words].join('-');
 }
 
-export { makeName };
+function b64encode(arrayBuffer) {
+  const uint8 = new Uint8Array(arrayBuffer);
+  const asChars = String.fromCharCode.apply(null, uint8);
+  return btoa(asChars);
+}
+
+export { makeName, b64encode };
+

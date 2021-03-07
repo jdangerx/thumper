@@ -47,7 +47,12 @@ class Transport extends React.Component {
             onClick={this.record}
             className={`w-8 hover:text-blue-400 ${this.props.recording ? "text-red-500" : "text-gray-600"}`}
           >⏺</button>
+          <button
+            onClick={this.props.export}
+            className="w-8 hover:text-blue-400"
+          >🡇</button>
         </div>
+
         <div className="flex-1 text-right">
           <button
             onClick={this.props.toggleHelp}
