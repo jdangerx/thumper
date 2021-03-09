@@ -42,6 +42,7 @@ class Thumper extends React.Component {
     this.toggleHelp = this.toggleHelp.bind(this);
     this.setPlaybackPos = this.setPlaybackPos.bind(this);
     this.export = this.export.bind(this);
+    this.read = this.read.bind(this);
   }
 
   async export() {
@@ -55,8 +56,23 @@ class Thumper extends React.Component {
       }));
 
     const savefile = {clips: Object.fromEntries(b64encoded), tracks: this.state.tracks};
-    console.log(JSON.stringify(savefile));
-    return JSON.stringify(savefile);
+    const out = JSON.stringify(savefile);
+    await this.read(out);
+    return out;
+  }
+
+  async read(savefile) {
+    const state = JSON.parse(savefile);
+    const clips = Object.entries(state.clips);
+    const decoded = clips.map(
+      ([clipId, clip]) => {
+        console.log(clip);
+        // get b64
+        // pack it into arraybuffer
+        // turn it into a blob with .ogg codec
+        // make an audiobuffer
+      }
+    );
   }
 
   async componentDidMount() {
